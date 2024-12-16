@@ -13,12 +13,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Building {
+  id        Int    @id @default(autoincrement())
+  name      String
+  latitude  Float
+  longitude Float
+  users     User[]
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String    @unique
+  buildingId Int
+  building   Building  @relation(fields: [buildingId], references: [id])
+  listings   Listing[]
+}
+
 model Listing {
   id          Int      @id @default(autoincrement())
   title       String
   description String
   price       Float
+  category    String // e.g., "Textbooks", "Electronics", etc.
   latitude    Float
   longitude   Float
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
 }
