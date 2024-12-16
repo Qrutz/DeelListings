@@ -18,5 +18,7 @@ model Listing {
   title       String
   description String
   price       Float
+  latitude    Float
+  longitude   Float
   createdAt   DateTime @default(now())
 }
