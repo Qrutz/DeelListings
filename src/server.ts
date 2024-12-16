@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Listing, PrismaClient } from '@prisma/client';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -45,9 +45,24 @@ app.get('/listings/proximity', async (req: Request, res: Response): Promise<any>
             return res.status(404).json({ error: 'User or building not found' });
         }
 
-        const { latitude, longitude } = user.building;
+        const { latitude, longitude, id: buildingId } = user.building;
 
-        // Use parameterized query for proximity and optional category
+        // Query for listings in the same building
+        const sameBuildingListings = await prisma.listing.findMany({
+            where: {
+                user: {
+                    buildingId,
+                },
+                ...(category && { category }),
+            },
+        });
+
+        // If there are enough listings in the same building, return them
+        if (sameBuildingListings.length > 0) {
+            return res.status(200).json(sameBuildingListings);
+        }
+
+        // Query for listings nearby (fallback to proximity-based)
         const query = `
             SELECT l.*, (
                 6371 * acos(
@@ -72,18 +87,21 @@ app.get('/listings/proximity', async (req: Request, res: Response): Promise<any>
             ORDER BY distance;
         `;
 
-        // Build the parameters array
         const params: (string | number)[] = [latitude, longitude, Number(radius)];
         if (category) params.push(category);
 
-        const listings = await prisma.$queryRawUnsafe(query, ...params);
+        const nearbyListings = await prisma.$queryRawUnsafe<Listing[]>(query, ...params);
 
-        res.status(200).json(listings);
+        // Combine the results, prioritizing same-building listings
+        const combinedListings = [...sameBuildingListings, ...nearbyListings];
+
+        res.status(200).json(combinedListings);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error fetching listings by proximity', details: error });
     }
 });
+
 // Get all listings
 app.get('/listings', async (req: Request, res: Response) => {
     try {
