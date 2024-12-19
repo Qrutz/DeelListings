@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Blob Storage Upload</title>
+</head>
+
+<body>
+    <h1>Test Azure Blob Storage Upload</h1>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" required />
+        <button type="submit">Upload File</button>
+    </form>
+    <p id="status"></p>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const status = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select a file to upload.");
+                return;
+            }
+
+            try {
+                // Step 1: Request SAS URL from your backend
+                const fileName = file.name; // Use original file name
+                const response = await fetch('http://localhost:3000/generate-sas-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileName }),
+                });
+
+                const data = await response.json();
+                const uploadUrl = data.sasUrl;
+
+                if (!uploadUrl) {
+                    throw new Error('Failed to retrieve SAS URL');
+                }
+
+                // Step 2: Upload file to Azure Blob Storage using the SAS URL
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'x-ms-blob-type': 'BlockBlob' },
+                    body: file,
+                });
+
+                if (uploadResponse.ok) {
+                    status.innerText = `File uploaded successfully: ${uploadUrl.split('?')[0]}`;
+                } else {
+                    throw new Error(`Upload failed with status ${uploadResponse.status}`);
+                }
+            } catch (error) {
+                console.error("Upload error:", error);
+                status.innerText = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+
+</html>
