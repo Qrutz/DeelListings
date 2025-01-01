@@ -83,4 +83,50 @@ router.post('/start', async (req: Request, res: Response) => {
     }
 });
 
+
+// Fetch all chats for a specific user
+router.get('/user/:userId', async (req: Request, res: Response): Promise<any> => {
+    const { userId } = req.params;
+
+    try {
+        // Ensure the user exists in the database
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Fetch all chats where the user is a member
+        const chats = await prisma.chat.findMany({
+            where: {
+                members: {
+                    some: { userId },
+                },
+            },
+            include: {
+                members: {
+                    include: {
+                        user: true, // Include user details for each member
+                    },
+                },
+                messages: {
+                    take: 1, // Include the latest message
+                    orderBy: { createdAt: 'desc' },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc', // Sort by most recent activity
+            },
+        });
+
+        res.status(200).json(chats);
+    } catch (error) {
+        console.error('Error fetching chats:', error);
+        res.status(500).json({ error: 'Failed to fetch chats.' });
+    }
+});
+
+
 export default router;
