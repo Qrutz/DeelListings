@@ -22,11 +22,50 @@ model Building {
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
+  id         String   @id @default(cuid()) // Clerk's ID as String
   name       String
   email      String   @unique
   buildingId Int
   building   Building @relation(fields: [buildingId], references: [id])
+
+  // Chat Relationships
+  messages    Message[]
+  chatMembers ChatMember[]
+}
+
+// Chat Model
+model Chat {
+  id        String   @id @default(cuid())
+  name      String? // Optional for group chats
+  isGroup   Boolean  @default(false) // Is this a group chat?
+  createdAt DateTime @default(now()) // Timestamp when chat is created
+
+  messages Message[] // Messages in the chat
+  members  ChatMember[] // Users in the chat
+}
+
+// Members of Chat Model
+model ChatMember {
+  id       String   @id @default(cuid())
+  chatId   String // Chat ID
+  userId   String // Clerk's ID as String
+  role     String   @default("member") // Roles: admin, member, etc.
+  joinedAt DateTime @default(now()) // When the user joined the chat
+
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Messages in Chat Model
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String // Chat ID
+  senderId  String // Clerk's ID as String
+  content   String // Message content
+  createdAt DateTime @default(now()) // Timestamp when sent
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation(fields: [senderId], references: [id])
 }
 
 model Listing {
