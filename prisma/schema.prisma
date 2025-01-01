@@ -14,11 +14,12 @@ datasource db {
 }
 
 model Building {
-  id        Int    @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   name      String
   latitude  Float
   longitude Float
   users     User[]
+  chatId    String? // Link to the building's group chat
 }
 
 model User {
