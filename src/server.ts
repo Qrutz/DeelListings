@@ -18,9 +18,16 @@ io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
 
+    // Keep track of active chat rooms
+    const activeUsers = new Map<string, string>(); // userId -> socketId
+
+
     // Handle joining a chat room
     socket.on('joinChat', async ({ chatId, userId }) => {
         try {
+
+            activeUsers.set(userId, chatId);
+
             // Check if the user is a member of the chat
             const chat = await prisma.chat.findFirst({
                 where: {
@@ -69,19 +76,20 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle sending a message
     socket.on('sendMessage', async ({ chatId, senderId, content }) => {
         try {
-            // Save the message to the database
+            // Save the message in the database
             const message = await prisma.message.create({
                 data: {
                     chatId,
                     senderId,
                     content,
                 },
-                include: { sender: true }, // Include sender details
+                include: { sender: true },
             });
 
-            // Emit the message to all users in the chat room
+            // Emit the new message to everyone in the chat
             io.to(chatId).emit('newMessage', {
                 id: message.id,
                 content: message.content,
@@ -91,6 +99,22 @@ io.on('connection', (socket) => {
                     id: message.sender.id,
                     name: message.sender.name,
                 },
+            });
+
+            // **Send notifications to users not in the chat room**
+            const chatMembers = await prisma.chatMember.findMany({
+                where: { chatId },
+            });
+
+            chatMembers.forEach((member) => {
+                if (member.userId !== senderId && activeUsers.get(member.userId) !== chatId) {
+                    // Notify users who are not currently in the chat
+                    io.to(member.userId).emit('notifyMessage', {
+                        chatId,
+                        content,
+                        senderName: message.sender.name,
+                    });
+                }
             });
         } catch (error) {
             console.error('Error sending message:', error);
