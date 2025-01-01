@@ -2,11 +2,17 @@ import express, { Request, Response } from 'express';
 import { Listing, PrismaClient } from '@prisma/client';
 import { BlobSASPermissions, BlobServiceClient, generateBlobSASQueryParameters, StorageSharedKeyCredential } from '@azure/storage-blob';
 import cors from 'cors';
+import { clerkMiddleware } from '@clerk/express'
+import { clerkClient, requireAuth } from '@clerk/express'
+
+
 
 const app = express();
 
+app.use(clerkMiddleware())
+
 // enable cors for http://127.0.0.1:8080/ 
-app.use(cors({ origin: 'http://127.0.0.1:8080' }));
+app.use(cors({ origin: 'http://localhost:8081' }));
 
 
 
@@ -27,10 +33,26 @@ if (!accountName || !accountKey || !containerName) {
     throw new Error('Missing Azure Storage configuration in environment variables');
 }
 
+function sanitizeFilename(filename: string): string {
+    return filename
+        .replace(/[^a-zA-Z0-9_.-]/g, '_') // Replace invalid characters with underscores
+        .toLowerCase(); // Optionally convert to lowercase for consistency
+}
+
+
+// create an hello world endpoint so we can test ip setup
+app.get('/', (req: Request, res: Response) => {
+    res.send('Hello World');
+});
+
+
 // Generate SAS URL
 app.post('/generate-sas-url', async (req: Request, res: Response) => {
     try {
-        const { fileName } = req.body;
+        let { fileName } = req.body;
+
+        // Sanitize the filename
+        fileName = sanitizeFilename(fileName);
 
         // Set expiry time (30 minutes from now)
         // Extend the expiry time to 1 hour into the future
@@ -64,7 +86,7 @@ app.post('/generate-sas-url', async (req: Request, res: Response) => {
 // Create a listing
 app.post('/listings', async (req: Request, res: Response) => {
     try {
-        const { title, description, price, latitude, longitude } = req.body;
+        const { title, description, price, latitude, longitude, userId, imageUrl } = req.body;
         const newListing = await prisma.listing.create({
             data: {
                 title,
@@ -72,7 +94,8 @@ app.post('/listings', async (req: Request, res: Response) => {
                 price,
                 latitude,
                 longitude,
-                userId: 1, // Hardcoded for now
+                ImageUrl: imageUrl,
+                userId: userId, // Hardcoded for now
                 category: 'Miscellaneous', // Hardcoded for now
             },
         });
@@ -84,40 +107,18 @@ app.post('/listings', async (req: Request, res: Response) => {
 
 app.get('/listings/proximity', async (req: Request, res: Response): Promise<any> => {
     try {
-        const { userId, radius, category } = req.query as {
-            userId: string;
+        const { latitude, longitude, radius, category } = req.query as {
+            latitude: string;
+            longitude: string;
             radius: string;
             category?: string;
         };
 
-        // Fetch user and their building
-        const user = await prisma.user.findUnique({
-            where: { id: Number(userId) },
-            include: { building: true },
-        });
-
-        if (!user || !user.building) {
-            return res.status(404).json({ error: 'User or building not found' });
+        if (!latitude || !longitude || !radius) {
+            return res.status(400).json({ error: 'latitude, longitude, and radius are required' });
         }
 
-        const { latitude, longitude, id: buildingId } = user.building;
-
-        // Query for listings in the same building
-        const sameBuildingListings = await prisma.listing.findMany({
-            where: {
-                user: {
-                    buildingId,
-                },
-                ...(category && { category }),
-            },
-        });
-
-        // If there are enough listings in the same building, return them
-        if (sameBuildingListings.length > 0) {
-            return res.status(200).json(sameBuildingListings);
-        }
-
-        // Query for listings nearby (fallback to proximity-based)
+        // Query listings nearby
         const query = `
             SELECT l.*, (
                 6371 * acos(
@@ -142,17 +143,18 @@ app.get('/listings/proximity', async (req: Request, res: Response): Promise<any>
             ORDER BY distance;
         `;
 
-        const params: (string | number)[] = [latitude, longitude, Number(radius)];
+        const params: (string | number)[] = [
+            parseFloat(latitude),
+            parseFloat(longitude),
+            parseFloat(radius),
+        ];
         if (category) params.push(category);
 
         const nearbyListings = await prisma.$queryRawUnsafe<Listing[]>(query, ...params);
 
-        // Combine the results, prioritizing same-building listings
-        const combinedListings = [...sameBuildingListings, ...nearbyListings];
-
-        res.status(200).json(combinedListings);
+        res.status(200).json(nearbyListings);
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching listings by proximity:', error);
         res.status(500).json({ error: 'Error fetching listings by proximity', details: error });
     }
 });
@@ -166,6 +168,45 @@ app.get('/listings', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Error fetching listings', details: error });
     }
 });
+
+
+// Get a single listing by ID
+app.get('/listings/:id', async (req: Request, res: Response): Promise<any> => {
+    try {
+      
+        const { id } = req.params;
+        const listing = await prisma.listing.findUnique({ where: { id: parseInt(id) } });
+        if (!listing) {
+            return res.status(404).json({ error: 'Listing not found' });
+        }
+
+
+        // Fetch the user who created the listing
+        const user = await clerkClient.users.getUser(listing.userId);
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // check if user has all the required fields
+        if (!user.id || !user.fullName || !user.imageUrl) {
+            return res.status(404).json({ error: 'User missing required fields' });
+        }
+
+        console.log(listing);
+
+        res.status(200).json({ ...listing, user:
+            {
+                id: user.id,
+                fullName: user.fullName,
+                image: user.imageUrl
+            }
+         });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching listing', details: error });
+    }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
