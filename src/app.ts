@@ -8,6 +8,7 @@ import chatRoutes from './routes/chats.routes';
 import buildingRoutes from './routes/buildings.routes';
 import userRoutes from './routes/user.routes';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
+import Webhookrouter from './routes/webhooks.router';
 
 const app = express();
 
@@ -15,6 +16,11 @@ app.use(useClerkMiddleware());
 // Pass options
 app.use(clerkMiddleware());
 app.use(cors({ origin: 'http://localhost:8081' }));
+
+
+// Webhook to capture events from Clerk API
+app.use('/api/webhook', Webhookrouter);
+
 app.use(express.json());
 
 

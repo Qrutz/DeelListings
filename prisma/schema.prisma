@@ -23,17 +23,22 @@ model Building {
 }
 
 model User {
-  id         String   @id @default(cuid()) // Clerk's ID as String
-  name       String
-  email      String   @unique
-  buildingId Int
-  building   Building @relation(fields: [buildingId], references: [id])
+  id              String   @id @default(cuid()) // Clerk's ID as String
+  name            String
+  email           String   @unique
+  phoneNumber     String?
+  profileImageUrl String?
+  buildingId      Int
+  building        Building @relation(fields: [buildingId], references: [id])
 
   // Chat Relationships
   messages    Message[]
   chatMembers ChatMember[]
   // Listings
   listings    Listing[]
+
+  // payment
+  balance Float @default(0) // Virtual wallet balance
 }
 
 // Chat Model
