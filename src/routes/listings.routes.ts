@@ -120,6 +120,7 @@ router.get('/:id', requireAuth(), async (req: ExpressRequestWithAuth, res: Respo
         // 3. Fetch the listing and include the associated user data
         const listing = await prisma.listing.findUnique({
             where: { id: listingId },
+            
         });
 
         // 4. Return 404 if listing not found
