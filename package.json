@@ -7,7 +7,6 @@
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "seed": "ts-node prisma/seed.ts",
-    "seedHouses": "ts-node prisma/seedStudenthouse.ts"
   },
   "keywords": [],
   "author": "",
