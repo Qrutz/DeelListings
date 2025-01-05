@@ -13,13 +13,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Building {
+model City {
+  id             Int              @id @default(autoincrement())
+  name           String
+  universities   University[]
+  studenthousing Studenthousing[]
+}
+
+model Studenthousing {
   id        Int     @id @default(autoincrement())
   name      String
   latitude  Float
   longitude Float
   users     User[]
   chatId    String? // Link to the building's group chat
+  cityId    Int // City ID
+  city      City    @relation(fields: [cityId], references: [id])
 }
 
 model User {
@@ -32,8 +41,8 @@ model User {
   isOnboarded Boolean @default(false) // Has the user completed onboarding?
 
   // Building, doesnt make sense if they arent in studnet hosuing tho
-  buildingId Int? // Nullable
-  building   Building? @relation(fields: [buildingId], references: [id]) // Optional relationship
+  StudenthousingId Int? // Nullable
+  Studenthousing   Studenthousing? @relation(fields: [StudenthousingId], references: [id]) // Optional relationship
 
   // University
   universityId Int?
@@ -50,9 +59,11 @@ model User {
 }
 
 model University {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  users User[]
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  users  User[]
+  cityId Int
+  city   City   @relation(fields: [cityId], references: [id])
 }
 
 // Chat Model

@@ -7,11 +7,11 @@ import { Webhook } from 'svix';
 const router = express.Router()
 
 // Map email domains to universities
-const domainToUniversity = {
-    'student.gu.se': 'Gothenburg University',
-    'chalmers.se': 'Chalmers University',
-    'liu.se': 'Linköping University',
-    'kth.se': 'KTH Royal Institute of Technology',
+const domainToUniversity: { [key: string]: string } = {
+  'student.gu.se': 'Gothenburg University',
+  'chalmers.se': 'Chalmers University',
+  'liu.se': 'Linköping University',
+  'kth.se': 'KTH Royal Institute of Technology',
 };
 
 router.post(
@@ -77,20 +77,14 @@ router.post(
             if (!existingUser) {
                 const email = evt.data.email_addresses[0]?.email_address || '';
                 const domain = email.split('@')[1]; // Extract domain
-                // @ts-ignore fff
+                
                 const universityName = domainToUniversity[domain];
 
                 let university = null;
                 if (universityName) {
                     university = await prisma.university.findFirst({
                         where: { name: universityName },
-                    });
-
-                    if (!university) {
-                        university = await prisma.university.create({
-                            data: { name: universityName },
-                        });
-                    }
+                    }); 
                 }
 
                 const user = await prisma.user.create({

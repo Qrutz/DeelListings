@@ -13,14 +13,16 @@ const io = new Server(server, {
     },
 });
 
+// Track active socket connections
+const activeSockets = new Set();
+
 // Handle socket connections
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
-
+    activeSockets.add(socket); // Track the socket connection
 
     // Keep track of active chat rooms
-    const activeUsers = new Map<string, string>(); // userId -> socketId
-
+    const activeUsers = new Map(); // userId -> socketId
 
     // Handle joining a chat room
     socket.on('joinChat', async ({ chatId, userId }) => {
@@ -125,8 +127,37 @@ io.on('connection', (socket) => {
     // Handle disconnection
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
+        activeSockets.delete(socket); // Remove the socket from the set
     });
 });
+
+// Graceful shutdown handler
+const shutdown = async () => {
+    console.log('Shutting down server...');
+
+    // Disconnect all active sockets
+    activeSockets.forEach((socket: any) => {
+        socket.disconnect(true);
+    });
+
+    // Disconnect Prisma
+    await prisma.$disconnect();
+
+    // Close the server
+    server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+    });
+
+    // Force exit after 5 seconds if still hanging
+    setTimeout(() => {
+        console.warn('Forcing shutdown...');
+        process.exit(1);
+    }, 5000);
+};
+
+process.on('SIGINT', shutdown);  // Handle Ctrl+C
+process.on('SIGTERM', shutdown); // Handle external termination
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

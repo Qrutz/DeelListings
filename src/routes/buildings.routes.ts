@@ -7,7 +7,7 @@ const router = express.Router();
 // Get all buildings
 router.get('/', async (req, res) => {
     try {
-        const buildings = await prisma.building.findMany();
+        const buildings = await prisma.studenthousing.findMany();
         res.status(200).json(buildings);
     } catch (error) {
         console.error('Error fetching buildings:', error);
@@ -20,7 +20,7 @@ router.get('/:id', async (req, res): Promise<any> => {
     const { id } = req.params;
 
     try {
-        const building = await prisma.building.findUnique({
+        const building = await prisma.studenthousing.findUnique({
             where: { id: parseInt(id) },
         });
 
@@ -41,7 +41,7 @@ router.post('/:userId/change-building', async (req, res): Promise<any> => {
 
     try {
         // Validate the new building
-        const newBuilding = await prisma.building.findUnique({
+        const newBuilding = await prisma.studenthousing.findUnique({
             where: { id: parseInt(buildingId) },
         });
         if (!newBuilding) {
@@ -51,18 +51,18 @@ router.post('/:userId/change-building', async (req, res): Promise<any> => {
         // Fetch the user and their current building
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: { building: true },
+            include: { Studenthousing: true },
         });
 
         if (!user) {
             return res.status(404).json({ error: 'User not found.' });
         }
 
-        const oldBuildingId = user.buildingId;
+        const oldBuildingId = user.StudenthousingId;
 
         // Remove user from old building's chat if it exists
         if (oldBuildingId && oldBuildingId !== newBuilding.id) {
-            const oldBuilding = await prisma.building.findUnique({
+            const oldBuilding = await prisma.studenthousing.findUnique({
                 where: { id: oldBuildingId },
             });
 
@@ -79,7 +79,7 @@ router.post('/:userId/change-building', async (req, res): Promise<any> => {
         // Update user's building
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: { buildingId: newBuilding.id },
+            data: { StudenthousingId: newBuilding.id },
         });
 
         // Ensure the new building has a chat
@@ -98,7 +98,7 @@ router.post('/:userId/change-building', async (req, res): Promise<any> => {
                 },
             });
 
-            await prisma.building.update({
+            await prisma.studenthousing.update({
                 where: { id: newBuilding.id },
                 data: { chatId: newChat.id },
             });

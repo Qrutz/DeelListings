@@ -22,6 +22,7 @@ router.get('/me', requireAuth(), async (req: ExpressRequestWithAuth, res): Promi
             },
             include: {
                 university: true,
+                Studenthousing: true,
             }
         })
         console.log(user);
@@ -78,58 +79,24 @@ router.post('/onboard', requireAuth(), async (req, res) => {
     }
 });
 
-// Map email domains to universities
-const domainToUniversity: { [key: string]: string } = {
-    'student.gu.se': 'Gothenburg University',
-    'chalmers.se': 'Chalmers University',
-    'liu.se': 'Linköping University',
-    'kth.se': 'KTH Royal Institute of Technology',
-};
 
-router.post('/university', requireAuth(), async (req, res): Promise<any> => {
+
+// endpoint for update housing 
+router.patch('/housing', requireAuth(), async (req, res) => {
+    const { StudenthousingId } = req.body;
+    const userId = req.auth?.userId;
+
     try {
-        // Get user ID from Clerk
-        const userId = req.auth?.userId;
-
-        // Fetch user data from Clerk
-        const clerkUser = await clerkClient.users.getUser(userId!);
-        const email = clerkUser.emailAddresses[0].emailAddress; // Primary email
-
-        // Extract university based on email domain
-        const domain = email.split('@')[1];
-        const universityName = domainToUniversity[domain];
-
-        if (!universityName) {
-            return res.status(400).json({ error: 'Invalid university email address' });
-        }
-
-        // Find or create the university
-        let university = await prisma.university.findFirst({
-            where: { name: universityName },
-        });
-
-        if (!university) {
-            university = await prisma.university.create({
-                data: { name: universityName },
-            });
-        }
-
-        // Update Clerk metadata
-        await clerkClient.users.updateUser(userId!, {
-            publicMetadata: { university: universityName },
-        });
-
-        // Update database
-        await prisma.user.update({
+        const user = await prisma.user.update({
             where: { id: userId! },
-            data: { universityId: university.id },
+            data: { StudenthousingId },
         });
-
-        return res.status(200).json({ success: true });
+        res.json(user);
     } catch (error) {
-        console.error('Error registering university:', error);
-        return res.status(500).json({ error: 'Failed to register university' });
+        res.status(500).json({ error: 'Failed to update housing' });
     }
 });
+
+
 
 export default router;

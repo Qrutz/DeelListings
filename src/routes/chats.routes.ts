@@ -26,7 +26,7 @@ const syncUser = async (clerkId: string) => {
                 id: clerkUser.id, // Clerk ID
                 name: clerkUser.fullName || 'Unknown User',
                 email: clerkUser.emailAddresses[0]?.emailAddress || '', // Use first email
-                buildingId: 1, // Assign default building or update as needed
+                StudenthousingId: 1, // Assign default building or update as needed
             },
         });
     }
