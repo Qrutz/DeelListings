@@ -23,13 +23,21 @@ model Building {
 }
 
 model User {
-  id              String   @id @default(cuid()) // Clerk's ID as String
+  id              String  @id @default(cuid()) // Clerk's ID as String
   name            String
-  email           String   @unique
+  email           String  @unique
   phoneNumber     String?
   profileImageUrl String?
-  buildingId      Int
-  building        Building @relation(fields: [buildingId], references: [id])
+
+  isOnboarded Boolean @default(false) // Has the user completed onboarding?
+
+  // Building, doesnt make sense if they arent in studnet hosuing tho
+  buildingId Int? // Nullable
+  building   Building? @relation(fields: [buildingId], references: [id]) // Optional relationship
+
+  // University
+  universityId Int?
+  university   University? @relation(fields: [universityId], references: [id])
 
   // Chat Relationships
   messages    Message[]
@@ -39,6 +47,12 @@ model User {
 
   // payment
   balance Float @default(0) // Virtual wallet balance
+}
+
+model University {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
 }
 
 // Chat Model

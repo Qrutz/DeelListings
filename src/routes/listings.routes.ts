@@ -7,9 +7,9 @@ import { ExpressRequestWithAuth } from '@clerk/express';
 const router = express.Router();
 
 // Create a listing
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: ExpressRequestWithAuth, res: Response) => {
     try {
-        const { title, description, price, latitude, longitude, userId, imageUrl } = req.body;
+        const { title, description, price, latitude, longitude, imageUrl } = req.body;
 
         const newListing = await prisma.listing.create({
             data: {
@@ -19,7 +19,7 @@ router.post('/', async (req: Request, res: Response) => {
                 latitude,
                 longitude,
                 ImageUrl: imageUrl,
-                userId,
+                userId: req.auth.userId!,
                 category: 'Miscellaneous', // Hardcoded for now
             },
         });
