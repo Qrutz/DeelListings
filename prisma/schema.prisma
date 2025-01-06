@@ -26,7 +26,8 @@ model Studenthousing {
   latitude  Float
   longitude Float
   users     User[]
-  chatId    String? // Link to the building's group chat
+  chatId    String? @unique // Foreign key to Chat (optional initially)
+  chat      Chat?   @relation(fields: [chatId], references: [id]) // One-to-one relationship
   cityId    Int // City ID
   city      City    @relation(fields: [cityId], references: [id])
 }
@@ -75,6 +76,8 @@ model Chat {
 
   messages Message[] // Messages in the chat
   members  ChatMember[] // Users in the chat
+
+  housing Studenthousing? // Relation (no references here!)
 }
 
 // Members of Chat Model

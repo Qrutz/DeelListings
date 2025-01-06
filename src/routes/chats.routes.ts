@@ -163,4 +163,50 @@ router.get('/:chatId', async (req: Request, res: Response): Promise<any> => {
 });
 
 
+
+// Join Chat Endpoint
+router.post('/join', async (req, res): Promise<any> => {
+    try {
+        const { userId } = req.auth; // Clerk user ID from auth middleware
+        console.log(userId);
+        const { studenthousingId } = req.body; // Passed in body during onboarding
+
+        // Find the studenthouse and its chat ID
+        const housing = await prisma.studenthousing.findUnique({
+            where: { id: studenthousingId },
+        });
+
+        if (!housing || !housing.chatId) {
+            return res.status(404).json({ message: 'Student housing not found or no chatroom exists' });
+        }
+
+        // Check if user is already a member
+        const existingMember = await prisma.chatMember.findFirst({
+            where: {
+                chatId: housing.chatId,
+                userId: userId!,
+            },
+        });
+
+        if (existingMember) {
+            return res.status(400).json({ message: 'User already a member of this chatroom' });
+        }
+
+        // Add user as a member to the chatroom
+        await prisma.chatMember.create({
+            data: {
+                chatId: housing.chatId,
+                userId: userId!,
+                role: 'member', // Default role
+            },
+        });
+
+        return res.json({ message: 'Successfully joined chatroom!' });
+    } catch (error) {
+        console.error('Error joining chatroom:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
 export default router;

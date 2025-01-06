@@ -88,6 +88,17 @@ async function main() {
 
     // Seed Student Housing
     for (const housing of studentHousingData) {
+        // create chatroom first
+        const chat = await prisma.chat.create({
+            data: {
+                name: `${housing.name} Chat`,
+                isGroup: true,
+            },
+        });
+    
+
+
+
         await prisma.studenthousing.upsert({
             where: { id: housing.id },
             update: {},
@@ -97,6 +108,7 @@ async function main() {
                 latitude: housing.latitude,
                 longitude: housing.longitude,
                 cityId: housing.cityId,
+                chatId: chat.id,
             },
         });
     }
