@@ -42,7 +42,10 @@ router.get('/', async (req: ExpressRequestWithAuth, res: Response): Promise<any>
         const listings = await prisma.listing.findMany({
             where: {
                 userId: {not: userId}
-            }
+            },
+            include: {
+                user: true,
+            },
         });
         res.status(200).json(listings);
     } catch (error) {

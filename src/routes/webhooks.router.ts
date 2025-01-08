@@ -110,6 +110,29 @@ router.post(
             });
         }
     }
+
+
+    if (eventType === 'user.updated') {
+      console.log('Updating user...');
+        try {
+            const user = await prisma.user.update({
+                where: { id: evt.data.id },
+                data: {
+                    email: evt.data.email_addresses[0]?.email_address || '',
+                    name: `${evt.data.first_name || ''} ${evt.data.last_name || ''}`.trim(),
+                    phoneNumber: evt.data.phone_numbers[0]?.phone_number || null,
+                    profileImageUrl: evt.data.image_url || '',
+                },
+            });
+            console.log('User updated:', user);
+        } catch (err) {
+            console.error('Error updating user in database:', err);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to update user',
+            });
+        }
+    }
       
       return void res.status(200).json({
         success: true,
