@@ -35,53 +35,60 @@ const syncUser = async (clerkId: string) => {
 };
 
 // Create or fetch a private chat
-router.post('/start', async (req: Request, res: Response) => {
+// Example: routes/chat.ts
+
+// routes/chats.ts
+router.post('/start', async (req: Request, res: Response): Promise<any> => {
     const { userId1, userId2 } = req.body;
-
+  
     try {
-        // Ensure both users exist in the database
-        await syncUser(userId1); // Sync first user
-        await syncUser(userId2); // Sync second user
-
-        // Check if chat already exists
-        let chat = await prisma.chat.findFirst({
-            where: {
-                isGroup: false,
-                members: {
-                    every: {
-                        userId: { in: [userId1, userId2] },
-                    },
-                },
+      // Sync or verify user1 / user2, etc.
+  
+      // Check if a 1-on-1 chat already exists
+      let chat = await prisma.chat.findFirst({
+        where: {
+          isGroup: false,
+          members: {
+            some: { userId: userId1 },
+          },
+          AND: {
+            members: {
+              some: { userId: userId2 },
             },
-            include: {
-                members: true,
+          },
+        },
+        include: { members: true },
+      });
+  
+      let isNew = false;
+      if (!chat) {
+        isNew = true;
+        chat = await prisma.chat.create({
+          data: {
+            isGroup: false,
+            members: {
+              create: [
+                { userId: userId1 },
+                { userId: userId2 },
+              ],
             },
+          },
+          include: { members: true },
         });
-
-        // Create chat if it doesn't exist
-        if (!chat) {
-            chat = await prisma.chat.create({
-                data: {
-                    isGroup: false,
-                    members: {
-                        create: [
-                            { userId: userId1 },
-                            { userId: userId2 },
-                        ],
-                    },
-                },
-                include: {
-                    members: true,
-                },
-            });
-        }
-
-        res.status(200).json(chat);
+      }
+  
+      // Return minimal response with "chatId"
+      return res.status(200).json({
+        chatId: chat.id, // Important: pass the chat's ID
+        isNew,
+      });
     } catch (error) {
-        console.error('Error starting chat:', error);
-        res.status(500).json({ error: 'Failed to start chat.' });
+      console.error('Error starting chat:', error);
+      return res.status(500).json({ error: 'Failed to start chat.' });
     }
-});
+  });
+  
+  
 
 
 // Fetch all chats for a specific user

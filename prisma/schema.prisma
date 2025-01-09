@@ -94,10 +94,13 @@ model ChatMember {
 
 // Messages in Chat Model
 model Message {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   chatId    String // Chat ID
   senderId  String // Clerk's ID as String
   content   String // Message content
+  type      String @default("text") // "text", "productCard"
+  listingId Int? // Optional foreign key to Listing
+
   createdAt DateTime @default(now()) // Timestamp when sent
 
   chat   Chat @relation(fields: [chatId], references: [id])

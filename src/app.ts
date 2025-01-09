@@ -27,7 +27,7 @@ app.use(express.json());
 
 
 app.use('/user', userRoutes);
-app.use('/listings',requireAuth(), listingsRoutes);
+app.use('/listings', listingsRoutes);
 app.use('/buildings', buildingRoutes); 
 app.use('/chats', chatRoutes);
 app.use('/sas', sasRoutes);

@@ -107,6 +107,33 @@ router.get('/listings/proximity', async (req: Request, res: Response): Promise<a
     }
 });
 
+
+router.get('/active', async (req, res): Promise<any>=> {
+    console.log('Fetching active listings');
+    const { userId } = req.query;
+    console.log('userId:', userId);
+  
+    try {
+      if (!userId) {
+        console.log('No userId found in query');
+        return res.status(400).json({ error: 'Missing userId param' });
+      }
+  
+      const listings = await prisma.listing.findMany({
+        // @ts-expect-error fff
+        where: { userId },  // must be a String column in DB
+        orderBy: { createdAt: 'desc' },
+      });
+  
+      console.log('Found listings:', listings.length);
+      return res.status(200).json(listings);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+      return res.status(500).json({ error: 'Failed to fetch listings' });
+    }
+  });
+  
+
 // Get a single listing by ID
 router.get('/:id', requireAuth(), async (req: ExpressRequestWithAuth, res: Response): Promise<any> => {
     try {
@@ -157,5 +184,8 @@ router.get('/:id', requireAuth(), async (req: ExpressRequestWithAuth, res: Respo
         res.status(500).json({ error: 'Error fetching listing', details: error });
     }
 });
+
+
+  
 
 export default router;
