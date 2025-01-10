@@ -108,9 +108,9 @@ model Message {
 }
 
 enum Category {
+  ALL
   TEXTBOOKS
   ELECTRONICS
-  CLOTHING
   FURNITURE
   KITCHENWARE
   FREE_STUFF
