@@ -38,55 +38,79 @@ const syncUser = async (clerkId: string) => {
 // Example: routes/chat.ts
 
 // routes/chats.ts
+// POST /chats/start
 router.post('/start', async (req: Request, res: Response): Promise<any> => {
-    const { userId1, userId2 } = req.body;
-  
+    const { userId1, userId2, productData } = req.body; 
+    // `productData` might be something like:
+    // {
+    //   productId: 123,
+    //   title: "Winter Boots",
+    //   price: 10,
+    //   imageUrl: "https://...",
+    //   userNote: "Is this still available?"
+    // }
+
     try {
-      // Sync or verify user1 / user2, etc.
-  
-      // Check if a 1-on-1 chat already exists
-      let chat = await prisma.chat.findFirst({
-        where: {
-          isGroup: false,
-          members: {
-            some: { userId: userId1 },
-          },
-          AND: {
-            members: {
-              some: { userId: userId2 },
+        // (Optional) Sync or verify users from Clerk
+        await syncUser(userId1);
+        await syncUser(userId2);
+
+        // 1) Check if a 1-on-1 chat already exists
+        let chat = await prisma.chat.findFirst({
+            where: {
+                isGroup: false,
+                members: {
+                    some: { userId: userId1 },
+                },
+                AND: {
+                    members: {
+                        some: { userId: userId2 },
+                    },
+                },
             },
-          },
-        },
-        include: { members: true },
-      });
-  
-      let isNew = false;
-      if (!chat) {
-        isNew = true;
-        chat = await prisma.chat.create({
-          data: {
-            isGroup: false,
-            members: {
-              create: [
-                { userId: userId1 },
-                { userId: userId2 },
-              ],
-            },
-          },
-          include: { members: true },
+            include: { members: true },
         });
-      }
-  
-      // Return minimal response with "chatId"
-      return res.status(200).json({
-        chatId: chat.id, // Important: pass the chat's ID
-        isNew,
-      });
+
+        let isNew = false;
+        if (!chat) {
+            isNew = true;
+            chat = await prisma.chat.create({
+                data: {
+                    isGroup: false,
+                    members: {
+                        create: [
+                            { userId: userId1 },
+                            { userId: userId2 },
+                        ],
+                    },
+                },
+                include: { members: true },
+            });
+        }
+
+        // 2) If productData is present, create a "productCard" message immediately
+        //    We'll store the entire object in `content` as JSON, and set type="productCard"
+        if (productData) {
+            await prisma.message.create({
+                data: {
+                    chatId: chat.id,
+                    senderId: userId1,  // who is sending
+                    type: 'productCard', 
+                    content: JSON.stringify(productData), // store as JSON
+                },
+            });
+        }
+
+        // Return minimal response with "chatId"
+        return res.status(200).json({
+            chatId: chat.id,
+            isNew,
+        });
     } catch (error) {
-      console.error('Error starting chat:', error);
-      return res.status(500).json({ error: 'Failed to start chat.' });
+        console.error('Error starting chat:', error);
+        return res.status(500).json({ error: 'Failed to start chat.' });
     }
-  });
+});
   
   
 
