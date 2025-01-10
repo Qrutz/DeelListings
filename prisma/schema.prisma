@@ -107,12 +107,23 @@ model Message {
   sender User @relation(fields: [senderId], references: [id])
 }
 
+enum Category {
+  TEXTBOOKS
+  ELECTRONICS
+  CLOTHING
+  FURNITURE
+  KITCHENWARE
+  FREE_STUFF
+  OTHER
+  // ...add more as needed
+}
+
 model Listing {
-  id          Int    @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
   description String
   price       Float
-  category    String // e.g., "Textbooks", "Electronics", etc.
+  category    Category // e.g., "Textbooks", "Electronics", etc.
   latitude    Float
   longitude   Float
   userId      String // clerk's ID
