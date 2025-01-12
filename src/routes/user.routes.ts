@@ -98,5 +98,33 @@ router.patch('/housing', requireAuth(), async (req, res) => {
 });
 
 
+// endpoint to get a user by id
+router.get('/:id', async (req: Request, res: Response):Promise<any> => {
+    const { id } = req.params;
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: id },
+            include: {
+                university: true,
+                Studenthousing: true,
+                listings: true,
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        return res.json(user);
+    } catch (error) {
+        console.log('Error fetching user:', error);
+        return res.status(500).json({ error: 'Failed to fetch user' });
+    }
+
+}
+);
+
+
 
 export default router;

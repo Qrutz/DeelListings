@@ -7,7 +7,7 @@ const router = express.Router();
 // Get all buildings
 router.get('/', async (req, res) => {
     try {
-        const buildings = await prisma.studenthousing.findMany();
+        const buildings = await prisma.studenthousing.findMany({include: {users: true}});
         res.status(200).json(buildings);
     } catch (error) {
         console.error('Error fetching buildings:', error);

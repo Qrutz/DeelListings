@@ -29,6 +29,8 @@ router.post('/', async (req: ExpressRequestWithAuth, res: Response) => {
     }
 });
 
+
+
 // Get all listings
 router.get('/', async (req: ExpressRequestWithAuth, res: Response): Promise<any> => {
     try {
@@ -53,7 +55,63 @@ router.get('/', async (req: ExpressRequestWithAuth, res: Response): Promise<any>
     }
 });
 
+// Example: Express + Prisma or a custom geo filter
+// GET /api/products?lat=57.70&lon=11.97&radius=3
 router.get('/listings/proximity', async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { latitude, longitude, radius, category } = req.query as {
+            latitude: string;
+            longitude: string;
+            radius: string;
+            category?: string;
+        };
+
+        if (!latitude || !longitude || !radius) {
+            return res.status(400).json({ error: 'latitude, longitude, and radius are required' });
+        }
+
+        // Query listings nearby
+        const query = `
+            SELECT l.*, (
+                6371 * acos(
+                    cos(radians($1)) *
+                    cos(radians(l.latitude)) *
+                    cos(radians(l.longitude) - radians($2)) +
+                    sin(radians($1)) *
+                    sin(radians(l.latitude))
+                )
+            ) AS distance
+            FROM "Listing" l
+            WHERE (
+                6371 * acos(
+                    cos(radians($1)) *
+                    cos(radians(l.latitude)) *
+                    cos(radians(l.longitude) - radians($2)) +
+                    sin(radians($1)) *
+                    sin(radians(l.latitude))
+                )
+            ) <= $3
+            ${category ? `AND l.category = $4` : ''}
+            ORDER BY distance;
+        `;
+
+        const params: (string | number)[] = [
+            parseFloat(latitude),
+            parseFloat(longitude),
+            parseFloat(radius),
+        ];
+        if (category) params.push(category);
+
+        const nearbyListings = await prisma.$queryRawUnsafe<Listing[]>(query, ...params);
+
+        res.status(200).json(nearbyListings);
+    } catch (error) {
+        console.error('Error fetching listings by proximity:', error);
+        res.status(500).json({ error: 'Error fetching listings by proximity', details: error });
+    }
+});
+
+router.get('/proximity', async (req: Request, res: Response): Promise<any> => {
     try {
         const { latitude, longitude, radius, category } = req.query as {
             latitude: string;

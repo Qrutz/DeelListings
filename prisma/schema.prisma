@@ -98,13 +98,17 @@ model Message {
   chatId    String // Chat ID
   senderId  String // Clerk's ID as String
   content   String // Message content
-  type      String @default("text") // "text", "productCard"
+  type      String @default("text") // "text", "productCard", "swapProposal"
   listingId Int? // Optional foreign key to Listing
+
+  // for swap proposals
+  swapId String? // Optional foreign key to Swap
 
   createdAt DateTime @default(now()) // Timestamp when sent
 
-  chat   Chat @relation(fields: [chatId], references: [id])
-  sender User @relation(fields: [senderId], references: [id])
+  chat   Chat  @relation(fields: [chatId], references: [id])
+  sender User  @relation(fields: [senderId], references: [id])
+  swap   Swap? @relation(fields: [swapId], references: [id])
 }
 
 enum Category {
@@ -131,5 +135,31 @@ model Listing {
 
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  swapsA Swap[] @relation("ListingA")
+  swapsB Swap[] @relation("ListingB")
+}
+
+model Swap {
+  id          String   @id @default(cuid())
+  proposerId  String // The user who initiated the swap
+  recipientId String // The other user
+  status      String   @default("pending") // e.g., "pending", "accepted", "declined", "cancelled"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  //  confirmation code
+  confirmationCode String? // Could store a random code or token
+
+  // 1) listingA references Listing
+  listingAId Int
+  listingA   Listing @relation("ListingA", fields: [listingAId], references: [id])
+
+  // 2) listingB references Listing
+  listingBId Int
+  listingB   Listing @relation("ListingB", fields: [listingBId], references: [id])
+
+  // Example extra fields to store the status of the swap:
+
+  Message Message[]
 }

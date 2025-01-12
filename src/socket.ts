@@ -65,10 +65,20 @@ export function initializeSocket(server: any) {
                 user: true,
               },
             },
+            
             messages: {
               orderBy: { createdAt: 'asc' },
-              include: { sender: true },
+              include: { sender: true, 
+                swap: {
+                  include: {
+                    listingA: true,
+                    listingB: true,
+                  },
+                }
+              
+              },
             },
+            
           },
         });
 
@@ -139,6 +149,100 @@ export function initializeSocket(server: any) {
         socket.emit('error', { message: 'Failed to send message.' });
       }
     });
+
+      // 5) ACCEPT SWAP (new event)
+      socket.on('acceptSwap', async ({ swapId, userId, chatId }) => {
+        try {
+          // 1) Fetch the swap
+          const swap = await prisma.swap.findUnique({ where: { id: swapId } });
+          if (!swap) {
+            socket.emit('error', { message: 'Swap not found.' });
+            return;
+          }
+  
+          // 2) Only the recipient can accept
+          if (swap.recipientId !== userId) {
+            socket.emit('error', { message: 'You are not the recipient of this swap.' });
+            return;
+          }
+  
+          // 3) Check if pending
+          if (swap.status !== 'pending') {
+            socket.emit('error', {
+              message: `Cannot accept a swap with status: ${swap.status}`,
+            });
+            return;
+          }
+  
+          // 4) Mark listings as swapped if you want
+          //    e.g. await prisma.listing.update({ where: { id: swap.listingAId }, data: { status: 'SWAPPED' } });
+          //         await prisma.listing.update({ where: { id: swap.listingBId }, data: { status: 'SWAPPED' } });
+  
+          // 5) Update the swap
+          const updatedSwap = await prisma.swap.update({
+            where: { id: swapId },
+            data: { status: 'accepted' },
+          });
+  
+          // 6) Possibly update the message in the chat that references the swap
+          //    If your message schema references swapId, you might also do:
+          //    await prisma.message.updateMany({ where: { swapId }, data: { ... } });
+  
+          // 7) Broadcast a "swapUpdated" event (or updated chat) to everyone
+          //    so their chat UIs can reflect the new status
+          io.to(chatId).emit('swapUpdated', updatedSwap);
+  
+          console.log(`User ${userId} accepted swap ${swapId}`);
+        } catch (error) {
+          console.error('Error accepting swap:', error);
+          socket.emit('error', { message: 'Failed to accept swap.' });
+        }
+      });
+
+
+      // 6) REJECT SWAP (new event)
+      socket.on('declineSwap', async ({ swapId, userId, chatId }) => {
+        try {
+          // 1) Fetch the swap
+          const swap = await prisma.swap.findUnique({ where: { id: swapId } });
+          if (!swap) {
+            socket.emit('error', { message: 'Swap not found.' });
+            return;
+          }
+  
+          // 2) Only the recipient can reject
+          if (swap.recipientId !== userId) {
+            socket.emit('error', { message: 'You are not the recipient of this swap.' });
+            return;
+          }
+  
+          // 3) Check if pending
+          if (swap.status !== 'pending') {
+            socket.emit('error', {
+              message: `Cannot reject a swap with status: ${swap.status}`,
+            });
+            return;
+          }
+  
+          // 4) Update the swap
+          const updatedSwap = await prisma.swap.update({
+            where: { id: swapId },
+            data: { status: 'rejected' },
+          });
+  
+          // 5) Broadcast a "swapUpdated" event (or updated chat) to everyone
+          //    so their chat UIs can reflect the new status
+          io.to(chatId).emit('swapUpdated', updatedSwap);
+  
+          console.log(`User ${userId} rejected swap ${swapId}`);
+        } catch (error) {
+          console.error('Error rejecting swap:', error);
+          socket.emit('error', { message: 'Failed to reject swap.' });
+        }
+      });
+
+
+    
 
     // 5) On disconnect
     socket.on('disconnect', () => {

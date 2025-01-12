@@ -10,6 +10,7 @@ import userRoutes from './routes/user.routes';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
 import Webhookrouter from './routes/webhooks.router';
 import studenthousingRoutes from './routes/studenthousing.router';
+import swapRoutes from './routes/swaps.routes';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/listings', listingsRoutes);
 app.use('/buildings', buildingRoutes); 
 app.use('/chats', chatRoutes);
 app.use('/sas', sasRoutes);
+app.use('/swap', swapRoutes);
 app.use('/studenthousing',studenthousingRoutes)
 
 
