@@ -9,7 +9,7 @@ const router = express.Router();
 // Create a listing
 router.post('/', async (req: ExpressRequestWithAuth, res: Response) => {
     try {
-        let { title, description, price, latitude, longitude, imageUrl, category, transactionType, swapPreferences  } = req.body;
+        let { title, description, price, latitude, longitude, imageUrl, category, condition, swapPreferences, locationName  } = req.body;
 
 
         const newListing = await prisma.listing.create({
@@ -23,6 +23,8 @@ router.post('/', async (req: ExpressRequestWithAuth, res: Response) => {
                 ImageUrl: imageUrl,
                 userId: req.auth.userId!,
                 category: category || 'OTHER',
+                condition: condition || 'USED',
+                locationName: locationName || null,
             },
         });
         res.status(201).json(newListing);

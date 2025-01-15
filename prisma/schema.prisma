@@ -124,11 +124,11 @@ enum Category {
   // ...add more as needed
 }
 
-enum TransactionType {
-  SALE
-  SWAP
-  BOTH
-  FREE
+enum Condition {
+  NEW
+  USED
+  LIKE_NEW
+  // ...add more as needed
 }
 
 model Listing {
@@ -147,18 +147,23 @@ model Listing {
 
   createdAt DateTime @default(now())
 
+  // new 
+  locationName String? // Optional location name like Sandarna, Göteborg
+  condition    Condition?
+
   user   User   @relation(fields: [userId], references: [id])
   swapsA Swap[] @relation("ListingA")
   swapsB Swap[] @relation("ListingB")
 }
 
 model Swap {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   proposerId  String // The user who initiated the swap
   recipientId String // The other user
-  status      String   @default("pending") // e.g., "pending", "accepted", "declined", "cancelled"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("pending") // e.g., "pending", "accepted", "declined", "cancelled"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  pickupTime  DateTime? // Optional pickup time
 
   //  confirmation code
   confirmationCode String? // Could store a random code or token

@@ -13,10 +13,10 @@ const router = Router();
 router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any> => {
     try {
       const { userId: proposerId } = req.auth; // from Clerk's `requireAuth()`
-      const { listingAId, listingBId, recipientId, partialCash, note } = req.body;
+      const { listingAId, listingBId, recipientId, partialCash, pickupTime,note } = req.body;
 
       // ensure 
-      if (!proposerId || !listingAId || !listingBId || !recipientId) {
+      if (!proposerId || !listingAId || !listingBId || !recipientId || !pickupTime) {
         return res.status(400).json({ error: 'Missing required fields.' });
       }
         
@@ -65,6 +65,7 @@ router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any
           listingBId,
           proposerId,
           recipientId,
+          pickupTime,
           status: 'pending',
           partialCash: partialCash || null,
           note: note || null,
