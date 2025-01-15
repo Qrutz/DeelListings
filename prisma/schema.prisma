@@ -39,6 +39,8 @@ model User {
   phoneNumber     String?
   profileImageUrl String?
 
+  preferredRadius Int? // Preferred radius for listings
+
   isOnboarded Boolean @default(false) // Has the user completed onboarding?
 
   // Building, doesnt make sense if they arent in studnet hosuing tho
@@ -122,16 +124,26 @@ enum Category {
   // ...add more as needed
 }
 
+enum TransactionType {
+  SALE
+  SWAP
+  BOTH
+  FREE
+}
+
 model Listing {
-  id          Int      @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   title       String
   description String
-  price       Float
-  category    Category // e.g., "Textbooks", "Electronics", etc.
-  latitude    Float
-  longitude   Float
-  userId      String // clerk's ID
-  ImageUrl    String
+
+  price     Float? // Nullable for free stuff and swaps
+  category  Category // e.g., "Textbooks", "Electronics", etc.
+  latitude  Float
+  longitude Float
+  userId    String // clerk's ID
+  ImageUrl  String
+
+  swapPreferences String? // <--- NEW: optional field for swap preferences
 
   createdAt DateTime @default(now())
 
@@ -158,8 +170,12 @@ model Swap {
   // 2) listingB references Listing
   listingBId Int
   listingB   Listing @relation("ListingB", fields: [listingBId], references: [id])
-
   // Example extra fields to store the status of the swap:
+
+  // 
+  partialCash Float? // Partial cash amount for swap
+
+  note String? // Optional note for the swap
 
   Message Message[]
 }

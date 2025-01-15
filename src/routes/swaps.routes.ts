@@ -13,7 +13,7 @@ const router = Router();
 router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any> => {
     try {
       const { userId: proposerId } = req.auth; // from Clerk's `requireAuth()`
-      const { listingAId, listingBId, recipientId } = req.body;
+      const { listingAId, listingBId, recipientId, partialCash, note } = req.body;
 
       // ensure 
       if (!proposerId || !listingAId || !listingBId || !recipientId) {
@@ -66,6 +66,8 @@ router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any
           proposerId,
           recipientId,
           status: 'pending',
+          partialCash: partialCash || null,
+          note: note || null,
         },
       });
   
@@ -76,7 +78,8 @@ router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any
           senderId: proposerId,
           type: 'swapProposal',
           swapId: newSwap.id,  // references the newly created Swap
-          content: '',         // optional: store note or empty
+          // put the note in the content field if it exists, else put "Would you like to swap?"
+          content: note || 'Would you like to swap?', 
         },
       });
   

@@ -32,6 +32,28 @@ router.get('/me', requireAuth(), async (req: ExpressRequestWithAuth, res): Promi
     }
 });
 
+// endpoint to edit users radius
+router.patch('/radius', requireAuth(), async (req, res):Promise<any>  => {
+    const { radius } = req.body;
+    const userId = req.auth?.userId;
+        // Validate the radius
+        if (!radius || radius < 100 || radius > 50000) {
+            return res.status(400).json({ error: 'Invalid radius range.' });
+          }
+
+    try {
+        const user = await prisma.user.update({
+            where: { id: userId! },
+            data: { 
+                preferredRadius: radius,
+             },
+        });
+        return res.json({ success: true, user: user });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update radius' });
+    }
+});
+
 
 router.get('/me/listings', requireAuth(), async (req: ExpressRequestWithAuth, res): Promise<any> => {;
     try {

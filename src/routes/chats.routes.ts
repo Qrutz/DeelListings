@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../../prisma/client';
-import { clerkClient } from '@clerk/express';
+import { clerkClient, requireAuth } from '@clerk/express';
 
 const router = express.Router();
 
@@ -111,6 +111,8 @@ router.post('/start', async (req: Request, res: Response): Promise<any> => {
         return res.status(500).json({ error: 'Failed to start chat.' });
     }
 });
+
+
   
   
 
