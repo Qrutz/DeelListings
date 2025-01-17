@@ -13,7 +13,7 @@ const router = Router();
 router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any> => {
     try {
       const { userId: proposerId } = req.auth; // from Clerk's `requireAuth()`
-      const { listingAId, listingBId, recipientId, partialCash, pickupTime,note } = req.body;
+      const { listingAId, listingBId, recipientId, partialCash, pickupTime, note, pickupLat, pickupLng } = req.body;
 
       // ensure 
       if (!proposerId || !listingAId || !listingBId || !recipientId || !pickupTime) {
@@ -67,6 +67,8 @@ router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any
           recipientId,
           pickupTime,
           status: 'pending',
+          pickupLat: pickupLat || null,
+          pickupLng: pickupLng || null,
           partialCash: partialCash || null,
           note: note || null,
           chatId: chat.id,

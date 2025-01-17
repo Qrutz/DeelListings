@@ -167,6 +167,9 @@ model Swap {
   updatedAt   DateTime  @updatedAt
   pickupTime  DateTime? // Optional pickup time
 
+  pickupLat Float?
+  pickupLng Float?
+
   //  confirmation code
   confirmationCode String? // Could store a random code or token
 

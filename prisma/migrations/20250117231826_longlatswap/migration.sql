@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Swap" ADD COLUMN     "pickupLat" DOUBLE PRECISION,
+ADD COLUMN     "pickupLng" DOUBLE PRECISION;
