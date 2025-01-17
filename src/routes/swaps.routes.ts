@@ -69,6 +69,7 @@ router.post('/', requireAuth(), async (req: Request, res: Response): Promise<any
           status: 'pending',
           partialCash: partialCash || null,
           note: note || null,
+          chatId: chat.id,
         },
       });
   
@@ -206,6 +207,53 @@ router.post('/:swapId/complete', requireAuth(), async (req, res): Promise<any> =
   } catch (error) {
     console.error('Error completing swap:', error);
     return res.status(500).json({ error: 'Failed to complete swap.' });
+  }
+});
+
+router.patch('/:id/complete', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+
+    // Just do a direct update
+    const updatedSwap = await prisma.swap.update({
+      where: { id },
+      data: { status: 'completed' },
+    });
+
+    return res.status(200).json(updatedSwap);
+  } catch (error) {
+    console.error('Error completing swap:', error);
+    return res
+      .status(500)
+      .json({ error: 'Failed to complete swap', details: error });
+  }
+});
+
+
+
+
+// endpoint to get a swap by id
+router.get('/:id', async (req: Request, res: Response): Promise<any> => {
+  const { id } = req.params;
+
+  try {
+    const swap = await prisma.swap.findUnique({
+      where: { id: id },
+      include: {
+        listingA: true,
+        listingB: true,
+        
+      },
+    });
+
+    if (!swap) {
+      return res.status(404).json({ error: 'Swap not found' });
+    }
+
+    return res.json(swap);
+  } catch (error) {
+    console.log('Error fetching swap:', error);
+    return res.status(500).json({ error: 'Failed to fetch swap' });
   }
 });
 

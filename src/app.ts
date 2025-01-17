@@ -11,6 +11,7 @@ import { clerkMiddleware, requireAuth } from '@clerk/express';
 import Webhookrouter from './routes/webhooks.router';
 import studenthousingRoutes from './routes/studenthousing.router';
 import swapRoutes from './routes/swaps.routes';
+import paymentRotuer from './routes/payment.routes';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/buildings', buildingRoutes);
 app.use('/chats', chatRoutes);
 app.use('/sas', sasRoutes);
 app.use('/swap', swapRoutes);
+app.use('/payment', paymentRotuer);
 app.use('/studenthousing',studenthousingRoutes)
 
 

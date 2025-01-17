@@ -80,6 +80,8 @@ model Chat {
   members  ChatMember[] // Users in the chat
 
   housing Studenthousing? // Relation (no references here!)
+
+  Swap Swap[]
 }
 
 // Members of Chat Model
@@ -183,4 +185,8 @@ model Swap {
   note String? // Optional note for the swap
 
   Message Message[]
+
+  // NEW FIELDS:
+  chatId String? // optional: not all deals might have a chat
+  chat   Chat?   @relation(fields: [chatId], references: [id])
 }

@@ -148,5 +148,36 @@ router.get('/:id', async (req: Request, res: Response):Promise<any> => {
 );
 
 
+router.get('/:id/deals', async (req: Request, res: Response): Promise<any>  => {
+    try {
+      const userId = req.params.id;
+  
+      // Find all swaps (deals) where user is the proposer or recipient
+      const deals = await prisma.swap.findMany({
+        where: {
+          OR: [
+            { proposerId: userId },
+            { recipientId: userId },
+          ],
+        },
+        // Include the related listings for each side of the swap
+        include: {
+          listingA: true,
+          listingB: true,
+        },
+        // Optionally, you can also sort by created date:
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+  
+      return res.json(deals);
+    } catch (error) {
+      console.error('Error fetching deals:', error);
+      return res.status(500).json({ error: 'Failed to fetch deals', details: error });
+    }
+  });
+
+
 
 export default router;
