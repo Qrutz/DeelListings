@@ -39,26 +39,27 @@ model User {
   phoneNumber     String?
   profileImageUrl String?
 
-  preferredRadius Int? // Preferred radius for listings
+  preferredRadius Int?
+  isOnboarded     Boolean @default(false)
 
-  isOnboarded Boolean @default(false) // Has the user completed onboarding?
-
-  // Building, doesnt make sense if they arent in studnet hosuing tho
-  StudenthousingId Int? // Nullable
-  Studenthousing   Studenthousing? @relation(fields: [StudenthousingId], references: [id]) // Optional relationship
+  // Studenthousing
+  StudenthousingId Int?
+  Studenthousing   Studenthousing? @relation(fields: [StudenthousingId], references: [id])
 
   // University
   universityId Int?
   university   University? @relation(fields: [universityId], references: [id])
 
-  // Chat Relationships
+  // Chat
   messages    Message[]
   chatMembers ChatMember[]
-  // Listings
-  listings    Listing[]
 
-  // payment
-  balance Float @default(0) // Virtual wallet balance
+  // Listings
+  listings Listing[]
+
+  // Payment
+  balance         Float   @default(0)
+  stripeAccountId String? // NEW FIELD
 }
 
 model University {
