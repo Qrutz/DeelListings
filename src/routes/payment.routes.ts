@@ -10,28 +10,72 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const router = express.Router();
 
-// --- Reusable function to create PaymentIntents ---
-export async function createPaymentIntent(amount: number, currency = 'usd') {
-  // amount is in smallest currency unit, e.g. 5000 = $50.00
+export async function createPaymentIntent(
+  amount: number,
+  stripeAccountId: string,
+  currency: string,
+  buyerId?: string,
+  sellerId?: string,
+  listingId?: string,
+
+) {
+
+  // take 8% of the payment as a platform fee
+  const platformFeeInCents = Math.round(amount * 0.08);
+  const sellerStripeAccountId = stripeAccountId; // fetch from DB if you have it
+  // e.g. const sellerStripeAccountId = await getSellerStripeAccountIdFromDB(sellerId);
+
   const paymentIntent = await stripe.paymentIntents.create({
     amount,
     currency,
-    // optional: "description", "metadata", etc.
+    metadata: {
+      buyerId: buyerId || '',
+      sellerId: sellerId || '',
+      listingId: listingId || '',
+    },
+    // If you use Connect:
+    // This will send (amount - fee) to the seller, and keep fee for your platform.
+    transfer_data: {
+      destination: sellerStripeAccountId,
+    },
+    application_fee_amount: platformFeeInCents,
   });
+
   return paymentIntent;
 }
 
-// --- Existing route to create a PaymentIntent ---
-router.post('/create-payment-intent', async (req: Request, res: Response): Promise<any> => {
+/**
+ * Route to create a PaymentIntent
+ */
+router.post('/create-payment-intent', async (req: Request, res: Response):Promise<any> => {
   try {
-    const { amount } = req.body; // e.g. 5000 for $50
-    const paymentIntent = await createPaymentIntent(amount, 'usd');
+    const { amount, buyerId, sellerId, listingId, stripeAccountId } = req.body;
+    console.log(req.body);
+    // For instance, amount = 10000 (i.e. $100)
+
+    // Typically, you'd look up your listing price to confirm 
+    // no one manipulates the "amount" on the client
+    // const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+    // ...
+
+    const paymentIntent = await createPaymentIntent(
+      amount,
+      stripeAccountId,
+      'SEK',
+      buyerId,
+      sellerId,
+      listingId,
+   
+
+    );
+
     return res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Failed to create PaymentIntent' });
   }
 });
+
 
 // --- New route to create/retrieve an Express Connect account for the user ---
 router.post('/create-express-account', async (req: Request, res: Response):Promise<any> => {

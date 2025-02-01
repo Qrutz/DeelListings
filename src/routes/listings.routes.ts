@@ -212,6 +212,7 @@ router.get('/:id', requireAuth(), async (req: ExpressRequestWithAuth, res: Respo
         // 3. Fetch the listing and include the associated user data
         const listing = await prisma.listing.findUnique({
             where: { id: listingId },
+            include: { user: true },
             
         });
 
@@ -233,11 +234,7 @@ router.get('/:id', requireAuth(), async (req: ExpressRequestWithAuth, res: Respo
         // 7. Respond with listing details, user data, and ownership info
         res.status(200).json({
             ...listing,
-            user: {
-                id: user.id,
-                fullName: user.fullName,
-                image: user.imageUrl,
-            },
+            
             isOwner, // Ownership flag
         });
 
