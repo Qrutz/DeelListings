@@ -89,8 +89,8 @@ router.post('/create-express-account', async (req: Request, res: Response):Promi
     //    This is the link your user will visit to enter bank info, etc.
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
-      refresh_url: 'https://yourdomain.com/connect/reauth', // or your custom route
-      return_url: 'https://yourdomain.com/connect/success', // or deep link
+      refresh_url: 'http://localhost:8081/', // or deep link
+      return_url: 'http://localhost:8081/profile', // or deep link
       type:'account_onboarding',
     });
 
